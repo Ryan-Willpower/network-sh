@@ -1,0 +1,31 @@
+######### Lab 12 #########
+######## Server log2 ########
+
+vi /etc/syslog-ng/conf.d/client_net.conf
+
+source s_client {
+tcp(ip(0.0.0.0) port(514) keep-alive(yes) max-connections(300));
+udp(ip(0.0.0.0) port(514));
+};
+
+vi /etc/syslog-ng/conf.d/graylog.conf
+
+destination logserver { udp("192.168.48.129" port(8514)); };
+log { source(s_client); filter(f_mail); destination(logserver); };
+log { source(s_sys); filter(f_mail); destination(logserver); };
+
+systemctl restart syslog-ng
+
+logger -p mail.info test1
+
+######## Server log3 ########
+
+vi /etc/rsyslog.conf
+
+### Add below RULES
+#### RULES ####
+*.*	@192.168.48.129
+
+systemctl restart rsyslog
+
+logger -p mail.info test1234

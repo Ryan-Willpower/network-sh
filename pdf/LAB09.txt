@@ -1,0 +1,47 @@
+######### Lab 9 #########
+
+#### Server 1 ####
+
+vi /etc/rsyslog.conf
+
+#### RULES ####
+*.info /var/log/test.log
+
+systemctl restart rsyslog
+
+cd /var/log
+ls
+cat test.log
+
+### man logger
+
+logger -p mail.info 123456 //test log
+
+tail -f /var/log/test.log
+
+logger local3.err w123456
+
+vi /etc/rsyslog.conf
+#### RULES ####
+*.info /var/log/test.log
+*.info @192.168.48.20
+
+systemctl restart rsyslog
+
+vi /etc/rsyslog.conf
+
+# Provides UDP syslog reception
+$ModLoad imudp
+$UDPServerRun 514
+
+# Provides TCP syslog reception
+$ModLoad imtcp
+$InputTCPServerRun 514
+
+systemctl restart rsyslog
+
+##### Syslog NG #####
+systemctl stop rsyslog
+systemctl disable rsyslog
+
+yum install syslog-ng -y

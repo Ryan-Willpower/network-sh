@@ -1,0 +1,75 @@
+######### Lab 8 #########
+### Server 2 ###
+yum -y install net-snmp-utils
+
+vi /etc/mrtg/get-cpu.sh
+#!/bin/bash
+ip_host="192.168.48.221"
+cpu=$(snmpwalk -v 2c -c test $ip_host .1.3.6.1.4.1.2021.11.9.0 |cut -d " " -f 4)
+total_cpu=100
+echo "$cpu"
+echo "$total_cpu"
+
+cd /etc/mrtg/
+chmod a+x get-cpu.sh
+./get-cpu.sh
+
+
+cd /etc/mrtg/
+cd cfg/
+vi mrtg-cpu.cfg
+
+----------------------------------------------------------------------------
+WorkDir: /var/www/html/monitor
+
+EnableIPv6: no
+Options[_]:bits,growright
+#RunAsDaemon:yes
+
+Target[cpu_usage]: `/etc/mrtg/get-cpu.sh`
+Title[cpu_usage]: CPU_USAGE
+MaxBytes[cpu_usage]: 100
+ShortLegend[cpu_usage]: %
+YLegend[cpu_usage]: CPU Utilization
+Legend1[cpu_usage]: Current CPU percentage load
+LegendI[cpu_usage]: Used
+LegendO[cpu_usage]:
+Options[cpu_usage]: growright,nopercent,gauge
+Unscaled[cpu_usage]: ymwd
+PageTop[cpu_usage]: <h1>CPU -- abc.test1.com</h1>
+----------------------------------------------------------------------------
+
+
+env LANG=C /usr/bin/mrtg mrtg-cpu.cfg
+env LANG=C /usr/bin/mrtg mrtg-cpu.cfg
+env LANG=C /usr/bin/mrtg mrtg-cpu.cfg
+
+indexmaker mrtg-cpu.cfg >> /var/www/html/monitor/index.html
+
+
+
+vi mrtg-cpu.cfg
+----------------------------------------------------------------------------
+WorkDir: /var/www/html/monitor
+
+EnableIPv6: no
+Options[_]:bits,growright
+#RunAsDaemon:yes
+
+TO
+EnableIPv6: no
+Options[_]:bits,growright
+RunAsDaemon:yes
+
+----------------------------------------------------------------------------
+
+env LANG=C /usr/bin/mrtg mrtg-cpu.cfg
+## Daemonizing MRTG ...
+
+
+indexmaker mrtg-cpu.cfg >> /var/www/html/monitor/index.html
+
+### ls -al  /var/www/html/monitor/
+### vi /var/www/html/monitor/index.html
+### rm -rf /var/www/html/monitor/index.html
+

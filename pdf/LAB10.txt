@@ -1,0 +1,127 @@
+######### Lab 10 #########
+######## Server log1 ########
+
+##### Syslog NG #####
+systemctl stop rsyslog
+systemctl disable rsyslog
+
+yum update
+yum install epel-release -y
+yum install syslog-ng -y
+
+vi /etc/syslog-ng/syslog-ng.conf
+
+### Add in file
+destination d_test_mail { file("/var/log/test.log"); };
+filter f_test_mail     { facility(mail); level(info..emerg) };
+
+log { source(s_sys); filter(f_test_mail); destination(d_test_mail); };
+
+systemctl restart syslog-ng
+
+ls -l /var/log/test.log
+# ls: cannot access /var/log/test.log: No such file or directory
+
+logger -p mail.info 12345
+
+ls -l /var/log/test.log
+# -rw-------. 1 root root 33 Feb 25 19:22 /var/log/test.log
+
+more /var/log/test.log
+# Feb 25 19:22:07 log1 root: 12345
+
+yum install net-tools -y
+netstat -atunp |grep :80
+
+yum -y install httpd
+systemctl enable httpd
+systemctl start httpd
+
+netstat -atunp |grep :80
+# tcp6       0      0 :::80                   :::*                    LISTEN
+
+systemctl disable firewalld
+systemctl stop firewalld
+
+### config sent log
+vi /etc/httpd/conf/httpd.conf
+
+### find with "/'str'" combined" not "#CustomLog "logs/access_log" common"
+CustomLog "logs/access_log" combined
+ErrorLog "logs/error_log"
+
+### edit to
+CustomLog "|/usr/bin/logger -t httpd -p local1.info" combined
+ErrorLog "|/usr/bin/logger -t httpd -p local1.err"
+
+systemctl restart httpd
+
+### syslog-ng receive log
+vi /etc/syslog-ng/conf.d/test_httpd.conf
+
+filter f_www { program("httpd"); }; 
+
+destination d_www { 
+          file("/var/log/$HOST/$YEAR/$MONTH/www.$YEAR-$MONTH-$DAY" 
+          owner(root) group(adm) perm(665) create_dirs(yes) dir_perm(0775)); 
+};
+
+log { source(s_sys); filter(f_www); destination(d_www); };
+
+systemctl restart syslog-ng
+
+### test log to open the website
+
+### log1 is a hostname linux
+more /var/log/log1/2019/02/www.2019-02-25
+
+######## Server log2 ########
+
+yum -y install httpd
+systemctl enable httpd
+systemctl start httpd
+
+### config sent log
+vi /etc/httpd/conf/httpd.conf
+
+### find with "/'str'" combined" not "#CustomLog "logs/access_log" common"
+CustomLog "logs/access_log" combined
+ErrorLog "logs/error_log"
+
+### edit to
+CustomLog "|/usr/bin/logger -t httpd -p local1.info" combined
+ErrorLog "|/usr/bin/logger -t httpd -p local1.err"
+
+systemctl restart httpd
+
+systemctl disable firewalld
+systemctl stop firewalld
+
+
+### config syslog sent to syslog-ng server log1
+vi /etc/rsyslog.conf
+
+### Add below RULES
+#### RULES ####
+*.*	@192.168.48.128
+
+systemctl restart rsyslog
+
+######## Server log1 ########
+
+### config syslog-ng receive 
+vi /etc/syslog-ng/conf.d/client_net.conf
+
+source s_client {
+tcp(ip(0.0.0.0) port(514) keep-alive(yes) max-connections(300));
+udp(ip(0.0.0.0) port(514));
+};
+
+vi /etc/syslog-ng/conf.d/net_httpd.conf
+log { source(s_client); filter(f_www); destination(d_www); };
+
+systemctl restart syslog-ng
+
+### test log to open the website
+
+more /var/log/log2/2019/02/www.2019-02-25

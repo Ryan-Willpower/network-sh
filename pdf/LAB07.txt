@@ -1,0 +1,64 @@
+######### Lab 7 #########
+### Server 1 ###
+yum -y install net-snmp net-snmp-utils
+vi /etc/snmp/snmpd.conf 
+--------------------------------------------
+rocommunity test
+--------------------------------------------
+
+yum -y install ntpdate
+ntpdate time.mut.ac.th
+ntpdate 3.th.pool.ntp.org
+rm -rf /etc/localtime
+ln -s ../usr/share/zoneinfo/Asia/Bangkok /etc/localtime
+
+systemctl restart snmpd
+
+snmpwalk -c test -v 2c 127.0.0.1 sysName.0
+
+iptables -F
+
+
+### Server 2 ###
+yum -y install mrtg
+yum -y install ntpdate
+ntpdate time.mut.ac.th 
+ntpdate 3.th.pool.ntp.org
+rm -rf /etc/localtime
+ln -s ../usr/share/zoneinfo/Asia/Bangkok /etc/localtime
+
+
+yum -y install httpd
+mkdir /etc/mrtg/cfg
+mkdir /var/www/html/monitor
+cfgmaker --snmp-options=:::::2 --ifref=descr --ifdesc=descr --global Options[_]:bits,growright --output /etc/mrtg/cfg/monitor.cfg test@192.168.48.221
+
+## --base: Writing /etc/mrtg/cfg/monitor.cfg
+
+
+vi /etc/mrtg/cfg/monitor.cfg
+
+#  for UNIX
+# WorkDir: /home/http/mrtg
+
+To 
+#  for UNIX
+# WorkDir: /home/http/mrtg
+WorkDir: /var/www/html/monitor
+
+env LANG=C /usr/bin/mrtg /etc/mrtg/cfg/monitor.cfg
+env LANG=C /usr/bin/mrtg /etc/mrtg/cfg/monitor.cfg
+env LANG=C /usr/bin/mrtg /etc/mrtg/cfg/monitor.cfg
+
+ls -al /var/www/html/monitor/
+
+systemctl restart httpd
+
+env LANG=C /usr/bin/mrtg /etc/mrtg/cfg/monitor.cfg
+
+env LANG=C /usr/bin/mrtg /etc/mrtg/cfg/monitor.cfg
+
+indexmaker /etc/mrtg/cfg/monitor.cfg > /var/www/html/monitor/index.html
+
+
+http://192.168.48.222/monitor/

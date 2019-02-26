@@ -1,0 +1,158 @@
+######### Lab 11 #########
+######## Server log2 ########
+##### Syslog NG #####
+systemctl stop rsyslog
+systemctl disable rsyslog
+
+yum update
+yum install epel-release -y
+yum install syslog-ng -y
+
+##### Graylog #####
+
+rpm -qa | grep syslog-ng
+# syslog-ng-3.5.6-3.el7.x86_64
+
+yum -y install java
+
+java -version
+# openjdk version "1.8.0_191"
+
+yum -y update
+
+rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
+
+vi /etc/yum.repos.d/elasticsearch.repo
+
+[elasticsearch-1.7]
+name=Elasticsearch repository for 1.7.x packages
+baseurl=http://packages.elastic.co/elasticsearch/1.7/centos
+gpgcheck=1
+gpgkey=http://packages.elastic.co/GPG-KEY-elasticsearch
+enabled=1
+
+yum -y install elasticsearch
+
+systemctl daemon-reload
+
+systemctl enable elasticsearch
+systemctl start elasticsearch
+
+vi /etc/elasticsearch/elasticsearch.yml
+
+### find
+#cluster.name: elasticsearch
+
+### edit to
+
+cluster.name: graylog2
+script.disable_dynamic: true
+
+systemctl restart elasticsearch
+
+yum install net-tools -y
+
+curl -X GET http://localhost:9200
+#{
+  "status" : 200,
+  "name" : "Llan the Sorcerer",
+  "cluster_name" : "graylog2",
+  "version" : {
+    "number" : "1.7.6",
+    "build_hash" : "c730b59357f8ebc555286794dcd90b3411f517c9",
+    "build_timestamp" : "2016-11-18T15:21:16Z",
+    "build_snapshot" : false,
+    "lucene_version" : "4.10.4"
+  },
+  "tagline" : "You Know, for Search"
+}
+
+curl -X GET 'http://localhost:9200/_cluster/health?pretty=true'
+{
+  "cluster_name" : "graylog2",
+  "status" : "green",
+  "timed_out" : false,
+  "number_of_nodes" : 1,
+  "number_of_data_nodes" : 1,
+  "active_primary_shards" : 0,
+  "active_shards" : 0,
+  "relocating_shards" : 0,
+  "initializing_shards" : 0,
+  "unassigned_shards" : 0,
+  "delayed_unassigned_shards" : 0,
+  "number_of_pending_tasks" : 0,
+  "number_of_in_flight_fetch" : 0
+}
+
+### install MongoDB
+vi /etc/yum.repos.d/mongodb-org-3.0.repo
+
+[mongodb-org-3.0]
+name=MongoDB Repository
+baseurl=http://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/3.0/x86_64/
+gpgcheck=0
+enabled=1
+
+yum -y install mongodb-org
+
+service mongod start
+chkconfig mongod on
+
+rpm -Uvh https://packages.graylog2.org/repo/packages/graylog-1.2-repository-el7_latest.rpm
+
+yum -y install graylog-server
+
+yum -y install epel-release
+
+yum -y install pwgen
+
+pwgen -N 1 -s 96
+YNkeCSjTtHyUmK4wauRo0nmKj8ur0dU6ZnZjBCg6hFIHFGLa2QcLrb8CGxhGgKvBLZaSR5f8jZIrybJnKZ26hAZ8Bal6St9t
+
+echo -n 123456789 | sha256sum
+15e2b0d3c33891ebb0f1ef609ec419420c20e320ce94c65fbc8c3312448eb225
+
+vi /etc/graylog/server/server.conf
+
+password_secret = YNkeCSjTtHyUmK4wauRo0nmKj8ur0dU6ZnZjBCg6hFIHFGLa2QcLrb8CGxhGgKvBLZaSR5f8jZIrybJnKZ26hAZ8Bal6St9t
+
+#root_username = admin
+
+root_password_sha2 = 15e2b0d3c33891ebb0f1ef609ec419420c20e320ce94c65fbc8c3312448eb225
+
+root_email = admin@test1.com
+root_timezone = UTC
+elasticsearch_http_enabled = false
+elasticsearch_discovery_zen_ping_unicast_hosts = 192.168.48.129,127.0.0.1:9300
+is_master = true # don't edit
+elasticsearch_max_docs_per_index = 20000000 # don't edit
+elasticsearch_shards = 1 
+elasticsearch_replicas = 0 # don't edit
+
+systemctl restart graylog-server
+
+tailf /var/log/graylog-server/server.log
+# [SystemJobManager] SystemJob <834636a0-3904-11e9-af14-000c296650e0> [org.graylog2.indexer.ranges.CreateNewSingleIndexRangeJob] finished in 146ms.
+
+yum -y install graylog-web
+
+pwgen -N 1 -s 96
+
+TJngRHIo57TErMbshCYNC9Al34ZOR6b2XDNt6AzCOw6QgKVrv7b9LKx3gjlt84xpK9PDs9IkAs2EOnKXNwsXZ8854xToweFr
+
+vi /etc/graylog/web/web.conf
+
+### find
+graylog2-server.uris=""
+application.secret=""
+
+### edit to
+graylog2-server.uris="http://127.0.0.1:12900/"
+application.secret="TJngRHIo57TErMbshCYNC9Al34ZOR6b2XDNt6AzCOw6QgKVrv7b9LKx3gjlt84xpK9PDs9IkAs2EOnKXNwsXZ8854xToweFr"
+
+systemctl restart graylog-web
+### Wait a minute
+
+poen web http://192.168.48.129:9000
+user:admin
+pass:123456789
